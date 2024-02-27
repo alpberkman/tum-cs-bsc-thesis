@@ -1,8 +1,6 @@
 % !TeX root = ../main.tex
 % Add the above to each chapter to make compiling the PDF easier in some editors.
 
-\chapter{Introduction}\label{chapter:introduction}
-
 % Introduction
 % Context of the project
 % Motivate the problem
@@ -14,3 +12,67 @@
 % Evaluation overview
 % Impact summary
 % Itemize the key contributions
+\chapter{Introduction}\label{chapter:introduction}
+TODO Intro
+
+\section{Context}
+Considering the changes in the computing industry, new CPU architectures are gaining importance and spreading to more users.
+Although x86 CPUs are still the most common personal and server computer processors, they are getting replaced by ARM and RISC-V CPUs.
+Nowadays these architectures are continuously developed on.
+And they are gaining more prominence on the market due to different features.
+For example ARM devices are being used for more power constrained cases, where compared to processing power, duration of the operation is more important.
+This results in some software, both legacy and new, being incompatible with newer computers that support these architectures.
+
+Another similar problem arises from smartphones and tablets.
+According to \cite{statscounter} the market share of phones and tablets is already 50\% higher than desktops and according to \cite{radicati} the number of phones have nearly doubled the number of people.
+All ofthese devices use ARM architectures, so there is this huge amount of software that is written for smartphones and tablets but they are not available for desktop computers.
+And vice versa the software that has been written for x86 CPUs are also not available for them.
+
+If we want to run these programs on different hardware there are multiple methods.
+First of all if the source code is available and is architecture agnostic, it can be recompilled.
+This is generally the preferred method as it yields the most efficent programs.
+However if the source code is architecture dependent or doesn't exist at all then we need to use a program called an emulator/virtual machine to run the existing binaries.
+These programs emulate a different CPU architecture which enables the computer to run programs that are compiled for that architectures. 
+
+\section{Motivation}
+Considering the previous paragraphs, emulators are an indispensable tools for prolonging software life and running them on different devices.
+At the same time they are incredibilly complex programs.
+For example Intel's manual for XXX is [TODO number of pages for a manaul].
+And ARM's manual for XXX is [TODO number of pages for a manaul].
+Since these manuals are this big and complex turning them to software is very error prone.
+[TODO an example about how difficult it is].
+Therefore we need multiple testing mechanisms to make sure the emulators work exactly like the emulated hardware itself.
+
+Most common tests are the following: unit tests, integration tests, functional tests, regression tests.
+All of these test can find bugs, but they require the developers to write the tests themselves.
+This act itself is very error prone as they write both the emulator and the tests according to what they have understood.
+Another common method is fuzzing, where you use random inputs to trigger a bug.
+However this method is also not very helpfull as some bugs might only appear in very specific cases.
+
+\section{High Level Approach}
+In this paper we propose a different method to single out bugs that exist on emulators.
+By comparing an emulator's log with an oracle's symbolic log, we can pinpoint the part that causese the bug.
+This program, which we will henceforth call the verifer, was built by Nicola Crivellin.
+Our contribution to this project was to add the verifier the capability to produce assembly instructions that can cause the same bugs.
+
+At the start, we have assumed that these bugs would cause wrong jumps therefore affecting the flow of the program.
+But we have come to notice that most of the bugs stems from single instructions doing wrong calculations.
+This did change the direction of the program slightly but we are still producing a code snippet that should trigger bugs that were found with symbolic execution.
+This snippet includes start and exit stubs, the basic block/faulty instruction along with a setup for the registers and other changes in the memory.
+
+\section{Impact}
+This project was designed with a clear goal: to pinpoint the instructions within an emulator that lead to bugs and extract it.
+By focusing on this objective, the project aims to isolate specific errors within the broader context of a malfunctioning program, making it significantly easier to identify and rectify the root causes of these issues.
+This aspect of the project is particularly beneficial for situations where an application, which operates flawlessly on original hardware, encounters unexpected crashes or errors when run on an emulator.
+Such discrepancies can be notoriously challenging to diagnose and resolve, as the faults do not lie within the application itself but rather within the underlying emulator that seeks to replicate the hardware environment.
+
+The complexity of debugging these emulator-specific errors cannot be understated.
+Unlike straightforward application bugs, which can often be traced back to specific lines of code or logic errors, emulator bugs are intertwined with the nuances of hardware emulation.
+This project, therefore, stands as a useful tool for developers, offering a simple way to single out errors stemming from emulators.
+
+In the broader context, the significance of this project extends beyond the immediate realm of emulator development.
+As virtual machines and emulators become increasingly prevalent in cloud computing environments, the reliability and accuracy of these systems take on new levels of importance.
+Cloud-based applications and services rely heavily on the seamless operation of virtual machines, with any discrepancies or faults potentially impacting a wide range of users and services.
+By improving the accuracy and reliability of emulators, this project not only benefits emulator developers but also contributes to the stability and efficiency of cloud computing platforms.
+In doing so, it addresses a critical need in the tech industry, helping to mitigate challenging debugging scenarios and ensuring that virtual environments more closely mirror the behavior of their real-world counterparts.
+

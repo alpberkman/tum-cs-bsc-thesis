@@ -1,6 +1,24 @@
 % !TeX root = ../main.tex
 
-\chapter{Implementation}\label{chapter:implementation}
-
 % Implementation
 % Explain all low-level implementation level details
+\chapter{Implementation}\label{chapter:implementation}
+In this chapter we will go over low-level implementation details and explain what we had to do in order get the reproducer working.
+These include some minor additions to the verifier, a basic algorithm to find and set the memory values and some assembly stubs both to prepare the state and run the executable.
+All of these additions are made in python as the verifier is written in it.
+
+\section{Additions to the Focaccia}
+Focaccia is a full fledged verifier that can find the bugs in emulators.
+However because it is desinged to just be the verifier, it lacks some usefull features that the reproducer needs.
+For example it can return 
+
+actual merging some assembly details?
+what I get from the verifier, symbolic expression?
+address matching, assembly, syscalls
+my additions to Focaccia
+
+\section{Data Section}
+\section{Code Section}
+\subsection{Stubs}
+\subsection{Instructions/Basic Block}
+\subsection{Register Setup}
