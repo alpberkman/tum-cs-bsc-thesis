@@ -10,10 +10,25 @@
 
 The following chapter presents the core design decisions that were used to extend the Focaccia verifier with the reproducer.
 Extra attention is given to the reproducer interface and the data that is taken from the verifier and how it relates to the whole verifier.
+When trying to understand some design choices, it is important to keep in mind that the reproducer was deisgned as an add-on.
 
-\section{Design of the Focaccia}
+\section{Focaccia Interface}
+The reproducer comes in the last section of the verifier.
+This means it is run after verification is done and errors are found.
+When running the reproducer the higher level interface gets two inputs.
 
-\section{Reproducer Interface}
+These are:
+\begin{itemize}
+    \item Minimum error severity
+    \item Result of verification including:
+    \begin{itemize}
+        \item pc
+        \item txl
+        \item ref
+        \item errors
+        \item snap
+    \end{itemize}
+\end{itemize}
 
 \section{Design of the Reproducer}
 
@@ -30,4 +45,6 @@ map the addresses code stubs
 
 more like overall structure
 
-\section{Where It Might Fail}
+\section{Shorcommings}
+In this section we will go over some instruction types that cannot be properly reproduced.
+These instructions are generally flow control type instructions.

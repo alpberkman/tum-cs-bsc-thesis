@@ -32,11 +32,11 @@ This approach contrasts with translating the entire program, all at once, before
 Dynamic translation offers the advantage of adaptability as it can optimize the translation based on the actual execution path of the program, which may vary from run to run.
 
 This method is especially usefull in emulating complex software where it's impractical to predict all possible execution paths in advance.
-Dynamic binary translators tend to work on basic blocks and they often incorporate a cache to store recently translated instructions, reducing the overhead of re-translating those instructions on subsequent executions. 
+As shown in figure \ref{fig:dynamic_binary_translation} dynamic binary translators tend to work on basic blocks and they often incorporate a cache to store recently translated instructions, reducing the overhead of re-translating those instructions on subsequent executions. 
 This caching mechanism is a key factor in mitigating the performance penalty associated with runtime translation, making dynamic translation an efficient and versatile approach for system emulation and virtualization environments.
 \begin{figure}[ht]
     \centering
-    \includegraphics[width=0.2\linewidth]{figures/placeholder}
+    \includegraphics[width=0.8\linewidth]{figures/dyn_bin_trans}
     \caption{Dynamic Binary Translation}
     \label{fig:dynamic_binary_translation}
 \end{figure}
@@ -48,7 +48,7 @@ However, static translation faces challenges in handling dynamic aspects of prog
 Static translation is well-suited for scenarios where the complete binary image is available and the execution environment is stable and predictable.
 \begin{figure}[ht]
     \centering
-    \includegraphics[width=0.2\linewidth]{figures/placeholder}
+    \includegraphics[width=0.6\linewidth]{figures/sta_bin_trans}
     \caption{Static Binary Translation}
     \label{fig:static_binary_translation}
 \end{figure}
@@ -57,12 +57,12 @@ Static translation is well-suited for scenarios where the complete binary image 
 \ac{QEMU} is a well known free and open-source emulator and a virtualizer. 
 At its core, \ac{QEMU} employs dynamic binary translation which lets the host machine run programs belonging a different architecture.
 Complementing this capability is the \ac{TCG}, an integral part of \ac{QEMU} that dynamically generates native code for the host CPU.
-As shown in \ref{fig:qemu_tcg} the \ac{TCG} is used to translate a foreign ISA into the host's architecture.
+As shown in figure \ref{fig:qemu_tcg} the \ac{TCG} is used to translate a foreign ISA into the host's architecture.
 
 \begin{figure}[ht]
     \centering
-    \includegraphics[width=0.8\linewidth]{figures/Qemu_TCG}
-    \caption{\ac{QEMU} translation process with \ac{TCG}}
+    \includegraphics[width=0.6\linewidth]{figures/qemu_TCG2}
+    \caption[QEMU translation process]{\ac{QEMU} translation process with \ac{TCG}}
     \label{fig:qemu_tcg}
 \end{figure}
 
@@ -84,7 +84,7 @@ These include \cite{qemu_arch}:
 
 \section{Arancini}
 Arancini is a project from the Systems Research Group at the \ac{TUM}.
-It builds on the knowledge gained from two earlier projects: Lasagna which translates any x86 program statically to an Arm ISA and Risotto which emulates x86 program dynamically on an Arm machine.
+It builds on the knowledge gained from two earlier projects: Lasagna \cite{rocha2022lasagne} which translates any x86 program statically to an Arm ISA and Risotto \cite{gouicem2022risotto} which emulates x86 program dynamically on an Arm machine.
 Like these previous projects, Arancini focuses on making x86 programs work on Arm, but it also adds support for RISC-V systems.
 It uses a combination of LLVM, a well-known toolkit for building compilers, and its own custom translation technology to achieve this.
 
@@ -104,7 +104,7 @@ As you can see in the figure \ref{fig:sym_tree} every possible branching instruc
 \begin{figure}[ht]
     \centering
     \includegraphics[width=0.8\linewidth]{figures/sym_trans}
-    \caption{An example of a branching code in a tree}
+    \caption[Branching in symbolic execution]{An example of a branching code in a tree}
     \label{fig:sym_tree}
 \end{figure}
 
@@ -122,7 +122,7 @@ This approach allows for more efficient exploration of the program's execution s
 Concolic execution has proven particularly useful in software testing and verification, providing a balance between the thoroughness of symbolic execution and the directness of concrete execution.
 
 \section{Miasm}
-Miasm \cite{miasm} is a framework primarily designed for reverse engineering and binary analysis.
+Miasm \cite{desclaux2012miasm} is a framework primarily designed for reverse engineering and binary analysis.
 It features tools such as disassembler and a symbolic execution engine.
 The framework operates by taking advantage of the features of the symbolic execution engine, where binary code is interpreted in terms of symbolic expressions rather than concrete values.
 
@@ -134,11 +134,11 @@ The produced symbolic expressions are invaluable when comparing different states
 Focaccia is a specialized verifier program designed with the goal of assessing the accuracy of emulators.
 It uses concolic execution to collect data from a binary and comapare it with an emulator's log.
 At its core, Focaccia works by comparing these two data sets.
-The first set comprises the memory and register values obtained during a test run on actual hardware, which serves as the benchmark or 'oracle' for expected outcomes. 
+The first set comprises the memory and register values obtained during a test run on actual hardware, which serves as the benchmark or oracle for expected outcomes. 
 The second set involves the detailed log produced by the emulator during its operation, which records various actions including register modifications, memory writes, and the current position of the \ac{PC}.
 These logs are integral to the verification process as they provide a sequential record of the emulator's behavior, which lets Focaccia find the cutoff point where it starts to behave differently.
 
-The verifier uses the Miasm reverse engineering framework for breaking down the original binary code into symbolic expressions for each operational step, transforming the instructions into a more abstract and analyzable form.
+The verifier uses the Miasm \cite{desclaux2012miasm} reverse engineering framework for breaking down the original binary code into symbolic expressions for each operational step, transforming the instructions into a more abstract and analyzable form.
 These symbolic expressions represent the ideal state changes that should occur step by step according to the software's design.
 Focaccia then does a detailed comparison between these  symbolic expressions and the actual state changes recorded in the emulator's log.
 

@@ -11,7 +11,6 @@ We'll begin by discussing the shifts in direction that the project has taken, du
 This reflection is quite important as we have came to notice that our first assumption was erroneous.
 Next, we will talk a bit bout the design goals when extending the verifer.
 Following this, we will give an overview of how the whole verifier/reproducer combination works along with how individual components function.
-To wrap up the chapter, we will present a survey and an analysis of common bugs found in Qemu.
 
 \section{Course of the Project}
 We started this project with the primary goal of evaluating the accuracy and reliability of various emulators.
@@ -53,9 +52,17 @@ This allows users to both see the problematic instruction directly or, if they p
 \section{System Workflow and Component's Functions}
 The reproducer is designed as an add-on to the Focaccia.
 Much of its functionality relies on this verifier.
+As shown in the figure \ref{fig:ver_and_rep_1} all the inputs for the reproducer come from it.
+
+\begin{figure}[ht]
+   \centering
+   \includegraphics[width=0.4\linewidth]{figures/ver_and_rep_1}
+   \caption[Verifier and reproducer]{Overview of the verifier and the reproducer}
+   \label{fig:ver_and_rep_1}
+\end{figure}
 
 \subsection{Inputs}
-Both the verifier and the reproducer use the same two inputs, namely the emulator log and the binary.
+Both the verifier and the reproducer depends on the same two inputs, namely the emulator log and the binary.
 However there are some pecularities for both of them.
 The first one is the emulator log, which can be structured in any way, as long as it contains necessary information.
 These logs should either document every change in memory and register values based on the program counter \ac{PC} or provide complete snapshots of memory and register states at each PC.
@@ -88,12 +95,6 @@ After the reproducer receives the inputs, it will then try to extract only the n
 This output is significant as it not only points out which instruction is erroneous but also demonstrates the conditions under which the bug occurs.
 Ultimately it should make debugging by recreating both the environment and the instruction.
 
-\begin{figure}[ht]
-   \centering
-   \includegraphics[width=0.4\linewidth]{figures/ver_and_rep_1}
-   \caption{Overview of the verifier and the reproducer}
-   \label{fig:ver_and_rep_1}
-\end{figure}
 
-\section{Survey of Qemu Bugs}
-TODO
+
+
