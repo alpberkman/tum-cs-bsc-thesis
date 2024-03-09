@@ -4,49 +4,44 @@
 % Explain the future work
 \chapter{Future Work}\label{chapter:future_work}
 As we wrap up this project, there are several directions where it might go for its future development.
-Among the options we see three dircetions.
-Firstly we can add fuzzing capabilities to our verifier.
-With the integration of fuzzing techniques we can generate a wider array array of test cases, leading to the discovery of more errors within faulty instructions.
+Among the options, we see three main directions.
+With the integration of fuzzing techniques, we can generate a wider array of test cases, leading to the discovery of more erroneous behavior within faulty instructions.
 
-A different direction would be to add support for additional architectures.
-Given the vast number of devices powered by Arm processors, as we have talked about in our introduction, improving emulators for these systems could significantly ease the process of running Arm specific programs on personal computers, extending the available software for them.
+A different direction would be to add support for additional architectures like Arm.
+Given the vast number of devices powered by Arm processors, as we have mentioned in our introduction, improving emulators for these systems could significantly ease the process of running Arm specific programs on personal computers, extending the available software for them.
 
-Lastly it might be worthwile to add support for irregular registers and instructions.
-They often introduce complex edge cases that can be challenging to debug.
+Lastly, it might be worthwhile to add support for segmentation faults
+These bugs often introduce complex edge cases that can be challenging to debug.
 Developing new tools to address these issues would be invaluable, though it demands a deep understanding of the x86 architecture and presents a formidable challenge.
 Each of these paths not only builds on the foundation we've established but also opens up new opportunities to enhance the functionality and reach of emulators.
 
 \section{Fuzzing for More Test Case Generation}
 Fuzzing is a technique used in software testing where random data is used as input.
-The main goal of fuzzing is to break the software, therefore find bugs or security loopholes that might not be discovered with standard testing methods. 
-In our case we can use this technique to prelode the registers and memory values with random data to trigger further unexpected errors.
-This approach can be especially useful because it can uncover hidden issues that might be difficult notice.
+The main goal of fuzzing is to break the software and, therefore find bugs or security loopholes that might not be discovered with standard testing methods. 
+In our case, we can use this technique to preload the registers and memory values with random data to trigger further unexpected errors.
+This approach can be especially useful because it can uncover hidden issues that might be difficult to notice.
 
-For example some bugs may only manifest when multiple registers are set to certain values.
+For example, some bugs may only manifest when multiple registers are set to certain values.
 While our verifier is capable of detecting such scenarios, it might not catch additional bugs associated with the same instruction.
 However, by using fuzzing we can introduce random inputs into the binaries.
 And we can potentially trigger these hidden bugs.
 Thus, fuzzing extends our ability to test the software more thoroughly.
-Nonetheless, it is important to keep in mind that fuzzing can also take lots of time before finding any useful result and it not a surefire way to find all the bugs.
+Nonetheless, it is important to keep in mind that fuzzing can also take lots of time before finding any useful result and it is not a surefire way to find all the bugs.
 
 \section{Support for ARM or RISC-V Binaries}
-The landscape of computing is rapidly evolving, with Arm devices getting more popular and RISC-V is emerging as a new technology.
+The landscape of computing is rapidly evolving, with Arm devices getting more popular and RISC-V emerging as a new technology.
 As these technologies get even more common, we will need emulators for these architectures.
-And just like the case with x86, these Arm and RISC-V emulators need to be faithfull to their respective architectures.
-Considering this fact, tools the verifier and the reproducer would be invaluable for development and polising of other emulators.
+And just like the case with x86, these Arm and RISC-V emulators need to be faithful to their respective architectures.
+Considering this fact, tools like the verifier and the reproducer would be invaluable for the development and polishing of other emulators.
 
-However this is not a simple task as each architecture uses their respective assembly instructions.
+However, this is not a simple task as each architecture uses its respective assembly instructions.
 The reproducer has some code regarding memory address detection and registers, that can be shared with other architectures.
-But it is still necessary to change the assembly instructions that are produced.
-It wouldn't be an easy task however it should be possible.
+However, it is still necessary to change the assembly instructions that are produced.
 
-\section{Adding Support for Irregular Registers and Instructions}
-And finally, this project can be improved upon by adding support for irregular registers and flow control instructions.
-With irregular registers we mean the registers which are used either to control the hardware or the registers which control the program flow or the registers that control the stack.
-These are some of the segment registers, the instruction pointer and the stack pointer.
-They are not easy to manipulate and making a wrong change would just crash the program.
-However if the reproducer could be added support for them, then it would be even more valuable.
-
-In the case of flow control instructins we mean the call, return and jump instructins.
-They are also difficult to reproduce since they change the control flow.
-however the verifier should be able to show the errors stemming from them.
+\section{Adding Support for Segfaults}
+As we have discussed before segmentation faults are difficult to debug with the current verifier.
+However, we can add support to the verifier and add detection algorithms to the reproducer to increase the likelihood of reproducing errors.
+This would firstly entail adding a mechanism to the verifier where if the emulator log is shorter than expected then it is considered a \ac{segfault}.
+Then in the reproducer, if the error is designated as a \ac{segfault} we might try to replicate the exact memory access details.
+This includes where the memory address belongs, its permission, page size, and alignment.
+The addition of these details would increase the likelihood of triggering the same bugs.

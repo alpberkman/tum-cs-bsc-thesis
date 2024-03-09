@@ -5,8 +5,22 @@
 % Explain the key findings and impact
 % Mention the source code
 \chapter{Summary and Conclusion}\label{chapter:summary_and_conclusion}
+In this thesis, we have strived to build an add-on for a verifier that checks the correctness of emulators.
+This add-on, which is also called the reproducer, was designed to replicate bugs that the Focaccia verifier detects.
+The work on the reproducer mostly went on transforming the output of the verifier and turning it into assembly instructions.
+This entailed preparing the memory, stack, and registers.
+We had to deal with symbolic expressions and use them to produce code that could trigger the detected bugs.
+We have built a generic interface that should be able to extract the aforementioned values and an x86-specific program that could print x86 assembly code.
 
+At the start of our project, we had the incorrect assumption that most of the translation bugs stemmed from incorrect execution path.
+However, we came to notice that in fact most of the errors stem not from changes in the execution path but rather from incorrect implementation of general instructions.
+This revelation led us to adjust the reproducer accordingly.
 
+We have tested our reproducer on real bugs and managed to create a binary that can trigger the same erroneous behavior while being tiny compared to the original program.
+This binary is only one-sixth the size of the original and its symbolic trace is one 57th of the original trace.
+Even the emulator log is only one 122th of the original log.
 
-Extend focaccia
-make debugging emulators easier
+We started this project in the hopes that we might create a useful tool that can help emulator developers pinpoint bugs and make reproducing them easier.
+Although our project hasn't seen any real-world usage we have managed to single out existing buggy instructions and reproduce them.
+We hope that the reproducer can be of help in discovering bugs.
+The source code of this project can be found in \url{https://github.com/TUM-DSE/focaccia} under the reproducer branch.
