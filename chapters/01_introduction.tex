@@ -14,73 +14,68 @@
 % Itemize the key contributions
 \chapter{Introduction}\label{chapter:introduction}
 In this chapter, we will give an introduction to our thesis in order to prepare the readers.
-We will start by giving context to our reproducer, to emphasize its usefulness.
+We will start by giving context to our reproducer to emphasize its usefulness.
 Following that, we will talk about our motivation and try to explain its importance. 
-We will then outline our approach, and explain the methods we are planning to use. 
-To wrap up, we'll discuss the impact we anticipate the reproducer will have, highlighting the positive changes we expect to achieve.
+We will then outline our approach and explain the methods we plan to use. 
+To wrap up, we will discuss the impact we anticipate the reproducer will have, highlighting the positive changes we expect to achieve.
 
 
 \section{Context}
-Considering the changes in the computing industry, new CPU architectures are gaining importance and spreading to more users.
-Although x86 CPUs are still the most common personal and server computer processors, they are being replaced by ARM and RISC-V CPUs.
-Nowadays these architectures are continuously developed.
-And they are gaining more prominence in the market due to different features.
-For example, ARM devices are being used for more power-constrained cases, where compared to processing power, the duration of the operation is more important.
-This results in some software, both legacy and new, being incompatible with newer computers that support these architectures.
+Considering the changes in the computing industry, new \ac{ISA}s are gaining importance and spreading to more users.
+Although x86-based CPUs are still the most common processors in personal and server computers, they are being replaced by ARM and RISC-V CPUs.
+For example, ARM devices are used in cases where the duration of the operation is more important than the immediate processing power.
+This is thanks to the ARM CPU's unique \ac{ISA}, which is more power-efficient than x86.
+However, since the \ac{ISA}s are incompatible, software written for x86 cannot be used with these newer computers.
 
 Another similar problem arises from smartphones and tablets.
-According to \cite{statscounter} the market share of phones and tablets is already 50\% higher than desktops and according to \cite{radicati} the number of phones has nearly doubled the number of people.
-All of these devices use ARM architectures, so there is a huge amount of software that is written for smartphones and tablets but they are not available for desktop computers.
-And vice versa the software that has been written for x86 CPUs is also not available for them.
+According to \cite{statscounter}, the market share of phones and tablets is already 50\% higher than desktops, and according to \cite{radicati}, the number of phones is nearly double the number of people.
+These devices use ARM architectures, so a considerable amount of software is written for smartphones and tablets, but it is not available for desktop computers.
+Vice versa, the software written for x86 CPUs is also not available to them.
 
-If we want to run these programs on different hardware there are multiple methods.
-First of all, if the source code is available and is architecture agnostic, it can be recompiled.
-This is generally the preferred method as it yields the most efficient programs.
-However, if the source code is architecture-dependent or doesn't exist at all then we need to use a program called an emulator/virtual machine to run the existing binaries.
-These programs emulate a different CPU architecture which enables the computer to run programs that are compiled for that architectures. 
+Multiple methods exist to run these programs on hardware with different \ac{ISA}.
+Firstly, they can be recompiled if the source code is available and is architecture agnostic.
+Recompilation is generally the preferred method as it yields the most efficient programs.
+However, if the source code is architecture-dependent or does not exist at all, then we need to use an emulator/virtual machine to run the existing binaries.
+These programs emulate a different CPU architecture, enabling the computer to run programs compiled for a different architecture. 
 
 \section{Motivation}
 Considering the previous paragraphs, emulators are indispensable tools for prolonging software life and running them on different devices.
 At the same time, they are incredibly complex programs.
-For example Combined Volume Set of Intel® 64 and IA-32 Architectures Software Developer’s Manuals \cite{intel_manual} is more than 5000 pages long.
-And ARM Architecture Reference Manual for A-profile architecture \cite{ARM_manual} is nearly 13000 pages long.
-Since these manuals are this big and complex turning them into software is very error-prone.
-Therefore we need multiple testing mechanisms to make sure the emulators work exactly like the emulated hardware itself.
+For example, the Combined Volume Set of Intel® 64 and IA-32 Architectures Software Developer's Manuals \cite{intel_manual} is more than 5000 pages long.
+Moreover, the ARM Architecture Reference Manual for A-profile architecture \cite{ARM_manual} is nearly 13000 pages long.
+Since these manuals are so big and complex, turning them into software is error-prone.
+Therefore, we need multiple testing mechanisms to ensure the emulators work precisely like the emulated hardware.
 
 The most common tests are the following: unit tests, integration tests, functional tests, and regression tests.
-All of these tests can find bugs, but they require the developers to write the tests themselves.
-This act itself is very error-prone as they write both the emulator and the tests according to what they have understood.
-Another common method is fuzzing, where you use random inputs to trigger a bug.
-This method is rather hands-free since the users only need to specify the input format.
-However, using random inputs to trigger a bug for any program isn't as simple as it sounds.
+These tests can find bugs, but they require the developers to write the tests themselves.
+This act is very error-prone as they write both the emulator and the tests according to their understanding.
+Another common method is fuzzing, where random inputs are used to trigger bugs.
+This method is relatively hands-free since the users only need to specify the input format.
+However, using random inputs to trigger a bug for any program is not as simple as it sounds.
 A general-purpose register in x86 CPU is 64 bits long.
-This means there are more than $ 1.8 * 10^{19} $ different values.
-If an instruction uses multiple registers, our chance of triggering a very specific edge case bug becomes impossible.
+This means more than $ 1.8 * 10^{19} $ different values exist.
+If an instruction uses multiple registers, our chance of triggering a specific edge case bug becomes impossible.
 
 \section{High Level Approach}
-In this paper, we propose a different method to single out bugs that exist on emulators.
-By comparing an emulator's log with an oracle's symbolic log, we can pinpoint the part that causes the bug.
-This program, which we will henceforth call the verifier, was built by Nicola Crivellin.
-Our contribution was to extend the verifier with a reproducer that could produce assembly instructions that could trigger the same bugs.
-
-At the start, we assumed that these bugs would cause wrong jumps therefore affecting the flow of the program.
-But we have come to notice that most of the bugs stem from single instructions doing wrong calculations.
-This did change the direction of the program slightly but we are still producing a code snippet that should trigger bugs that were found with symbolic execution.
-This snippet includes start and exit stubs, the basic block/faulty instruction along with a setup for the registers and other changes in the memory.
+In this paper, we will explain the design of our reproducer, a program that we have implemented to replicate bugs found on emulators.
+It was built as an add-on for a verifier, which, given an executable and its log from an emulator, can detect discrepancies and show where they differ from the expected execution.
+This program's output is a symbolic expression, which our reproducer uses to create a minimal program that can replicate the detected bugs.
+The program that the reproducer outputs includes the memory, stack, and registers, along with the instructions that trigger the bug.
+These values are combined with start and exit stubs to prepare this program to be assembled and run.
 
 \section{Impact}
 This program was designed with a clear goal: to pinpoint the instructions within an emulator that lead to bugs and extract them.
 By focusing on this objective, the reproducer aims to isolate specific bugs within the broader context of a program that triggers unexpected errors in an emulator, making it significantly easier to identify and fix the root causes of these issues.
-This aspect of the reproducer is particularly beneficial for situations where an application, which operates flawlessly on original hardware, encounters unexpected crashes or errors when run on an emulator.
+This aspect of the reproducer is particularly beneficial for situations where an application that operates flawlessly on original hardware encounters unexpected crashes or errors when run on an emulator.
 Such discrepancies can be notoriously challenging to diagnose and resolve, as the faults do not lie within the application itself but rather within the underlying emulator that seeks to replicate the hardware environment.
 
 The complexity of debugging these emulator-specific errors cannot be understated.
 Unlike straightforward application bugs, which can often be traced back to specific lines of code or logic errors, emulator bugs are intertwined with the nuances of hardware emulation.
-This program, therefore, stands as a useful tool for developers, offering a simple way to single out errors stemming from emulators.
+This program is, therefore, a valuable tool for developers. It offers a simple way to identify errors caused by emulators.
 
 In the broader context, the significance of this reproducer extends beyond the immediate realm of emulator development.
 As virtual machines and emulators become increasingly prevalent in personal and cloud computing environments, the reliability and accuracy of these systems take on new levels of importance.
 Some newer personal computers like Apple's M series depend on virtual machines \cite{rosetta} to run legacy code.
-While cloud-based applications and services rely heavily on the seamless operation of virtual machines, with any discrepancies or faults potentially impacting a wide range of users and services.
-By improving the accuracy and reliability of emulators, this program not only benefits emulator developers but also contributes to the stability and efficiency of personal computers and cloud computing platforms.
-In doing so, it addresses a need in the tech industry, helping to mitigate challenging debugging scenarios and ensuring that virtual environments more closely mirror the behavior of real hardware.
+Cloud-based applications and services rely heavily on the seamless operation of virtual machines, and any discrepancies or faults could potentially impact a wide range of users and services.
+This program benefits emulator developers by improving emulator accuracy and reliability. It also contributes to the stability and efficiency of personal computers and cloud computing platforms.
+In doing so, it addresses a need in the tech industry, helping to mitigate challenging debugging scenarios and ensuring that virtual environments more closely mirror actual hardware behavior.

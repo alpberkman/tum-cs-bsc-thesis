@@ -1,27 +1,24 @@
-\chapter{\abstractname}
 
 %TODO: Abstract
 % Abstract
 % A short summary of the problem statement, key ideas, tangible contributions
 % A paragraph about the impact summary and link to the source code
 
-
-In the last ten years, a computer revolution has been happening.
-Once, the most prominent CPU architecture was x86.
-However, new CPU architectures like ARM and RISC-V are gaining more popularity day by day and replacing x86 CPUs.
-These new architectures are commonly employed in PCs and cloud servers and in most cases, these devices use older software that was designed for x86 architecture.
-However, it is not easy to replace the software that is running on these devices.
-Thus, computer software called emulators are being used to run x86 binaries on these architectures.
+\chapter{\abstractname}
+In the past decade, there has been a significant shift in computer architectures, with x86 being replaced by newer architectures like ARM and RISC-V.
+These new architectures are often employed in PCs and cloud servers, and in most cases, they must be able to run software designed for x86 architecture.
+However, because these newer ISAs are fundamentally different from any other architecture, they cannot run the binaries compiled for the x86.
+Thus, emulators/virtual machines are used to run these binaries on different architectures.
 
 While these tools offer significant advantages, they are not without flaws.
-Accurately emulating a CPU  is a very complex task prone to errors.
+Accurately emulating an ISA is a very complex task prone to errors.
 As a result, many emulators are riddled with bugs.
-Generally, when trying to replicate a bug, it is not a good idea to run the whole program repeatedly.
-Especially since some bugs may take considerable time to manifest or may only occur under very specific conditions and inputs.
+Generally, when trying to replicate a bug, it is not a good idea to run the whole program repeatedly since some bugs may take considerable time to manifest or only occur under particular conditions and inputs.
 
 In such scenarios, having a program capable of isolating the specific instructions and data that lead to an error would be extremely helpful.
 To address this, we have developed an add-on to expand a verifier, a program that checks the correctness of virtual machines, with a reproducer.
-This reproducer add-on can use the output of the verifier, the instructions, and the data to output a program that can trigger the bug.
-In other words, we can isolate the bugs from larger programs.
+This reproducer add-on can use the verifier's output, instructions, and data to generate a program that triggers the same bug.
+In other words, we can isolate bugs from larger programs.
 The main benefits are that this program always uses the same data, meaning there is no input to worry and the produced program is tiny, which means debugging it is easier.
-With this reproducer, we aim to make debugging emulators easier to help emulator developers perfect their tools and increase the longevity of available programs.
+With this reproducer, we aim to make debugging emulators easier, help emulator developers perfect their tools, and increase the longevity of available programs.
+

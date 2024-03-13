@@ -5,38 +5,40 @@
 % First explain all related work in sufficient detail
 % Also, explain how the related work compares to your own work
 \chapter{Related Work}\label{chapter:related_work}
-In this chapter we will explore similar technologies, that can be used along with the reproducer to improve the bug reproduction.
+In this chapter, we will explore similar technologies that can be used along with the reproducer to improve bug reproduction.
 
 \section{Increasing the Scalability of Symbolic Execution}
 One of the biggest problems symbolic execution suffers from is the path explosion.
-Path explosion is the exponential increase in the number of feasible paths, with increasing code size.
+Path explosion is the exponential increase in the number of feasible paths with increasing code size.
 It may even result in an infinite number of paths.
 Path explosion puts a limit on the number of branches in a program.
-This means larger programs or ones that don't necessarily finish may suffer from it, which would make extracting the symbolic trace very resource-heavy or simply impossible.
+This means larger programs or ones that do not necessarily finish may suffer from it, making extracting the symbolic trace resource-heavy or simply impossible.
 
-Chipounov et al. \cite{chipounov2009selective} suggest a method that they call selective symbolic execution.
+Chipounov et al. \cite{chipounov2009selective} suggest a method they call selective symbolic execution.
 Their method can transition between symbolic and concrete execution, which means they can designate parts of the code for one of the two execution methods.
 Correct utilization of this method can negate the effects of path explosion by turning to concrete execution.
 
 This method can be used with the verifier to skip parts of the code that might not be of interest.
-This would simplify the log gathering process at the start, and when analyzing the code, the comparison would take less time since there would be fewer symbolic traces to go through.
+This reduction in symbolic execution would simplify the log-gathering process.
+Later, when analyzing the code, the comparison would take less time since there would be fewer symbolic traces to go through.
 
 \section{Implementing Symbolic Execution on Emulators}
-A different method to gather more information about the execution of emulators might be to directly add symbolic execution to them.
+A different method to gather more information about the execution of emulators might be to add symbolic execution to them directly.
 Poeplau et al. \cite{poeplau2021symqemu} built SymQEMU on top of QEMU by modifying the intermediate representation of the target program before translating it to the host architecture.
 While Jeon et al. \cite{jeon2012symdroid} implemented a symbolic execution engine that works with Dalvik bytecode.
 Both of these methods work on internal representations in order to have a simpler way of dealing with the quirks of the instructions.
 
-Although this method might be able to simplify the symbolic execution, it requires the emulators to implement this method.
-Therefore it is not something that can be added to the verifier or the reproducer.
-But both of these tools can be extended to accept these internal representations in order increase the likelihood of discovering bugs.
+Although this method might simplify symbolic execution, it requires the emulators to implement it.
+Therefore, it cannot be added to the verifier or the reproducer.
+However, both of these tools can be extended to accept these internal representations, increasing the likelihood of discovering bugs.
 
 \section{Code Coverage of Libraries}
-In their paper, Gao et al. \cite{ao2018android} built a dynamic symbolic execution engine for Android applications that would analyze libraries when they were used and produce a representation of it.
+In their paper, Gao et al. \cite{ao2018android} built a dynamic symbolic execution engine for Android applications that would analyze libraries when they were used and produce a representation.
 They would later run this representation multiple times to create an accurate representation of the symbolic expression that would be context-specific.
+Although their goal was to automate analyzing ever-changing Android libraries, we might be able to leverage it to analyze different C standard libraries. 
 
 Giving extra attention to standard libraries might be useful for our project.
-So far we have always used programs that were statically linked but, if we could analyze standard libraries separately and combine them with the available program's symbolic log, we could also use the reproducer on dynamically linked programs.
+So far, we have always used programs that were statically linked. However, if we could analyze standard libraries separately and combine them with the available program's symbolic log, we could also use the reproducer on dynamically linked programs.
 
 \section{Instruction Chaining}
 Yan et al. \cite{yan2018fast} concentrated on test efficiency in their paper.
@@ -44,13 +46,15 @@ They have developed a method to combine many instruction tests into a single pro
 This method has the advantage of amortizing overheads.
 They also added a Feistel network to make each step invertible.
 
-In our case, it might be beneficial to add such a feature to be able to run multiple tests in quick succession.
-While our program's main goal is to pinpoint bugs from a larger program, QEMU already has a large test suite.
-Although each QEMU version is supposed to pass these tests before getting published, there might be small bugs that are getting ignored during the test process.
-Using our program might help detect more bugs and a feature like state chaining might help this process.
+In our case, it might be beneficial to add such a feature to run multiple tests in quick succession.
+While our program's primary goal is to pinpoint bugs from a larger program, QEMU already has an extensive test suite.
+Although each QEMU version is supposed to pass these tests before being published, minor bugs might be ignored during the test process.
+Our program might help detect more bugs, and a feature like state chaining might help with this process.
 
 \section{Multi-Level Symbolic Execution}
 Lastly, Fonseca et al. \cite{fonseca2018multinyx} implemented a new framework called MultiNyx to analyze hypervisors.
-This project is aimed at finding bugs in processor extensions that are used for emulation, therefore its primary target is not the regular instructions but the special emulation instructions.
+This project aims to find bugs stemming from processor extensions used for emulation; therefore, its primary target is not software accelerators but hardware ones.
+It employs selective, multi-level symbolic execution to optimize the process.
 
-These methods can be used to extend the verifier and the reproducer for nested emulation where the outer emulator has to emulate these special instructions.
+Although our target is different, it would still be beneficial to add support for such a tool since emulators can have different backends.
+It would also give better coverage against bugs.
