@@ -9,7 +9,7 @@ Understanding the process behind emulators is crucial in determining why certain
 Firstly, we will explore how emulators convert binary code so it can run on different types of computers.
 This conversion process is quite essential because mistakes during it are often the source of the errors we are trying to fix.
 Knowing how this translation works helps us get to the root of the problem.
-Then we will explain what basic blocks are, since they are commonly used when translating code.
+Then, we will explain what basic blocks are since they are commonly used when translating code.
 
 Next, we will discuss our primary emulator targets.
 While the reproducer and the verifier need generic input, there are two main emulators we are concentrating on.
@@ -31,10 +31,10 @@ Static translation is a binary translation method that involves converting the e
 This approach allows for thorough analysis and optimization of the translated code, potentially leading to better overall performance for the translated application.
 However, static translation faces challenges in handling dynamic aspects of program execution, such as just-in-time compilation or self-modifying code, which are better managed by dynamic translation techniques.
 Another common problem with static translation is the complexity of the target \ac{ISA}.
-For example some x86 instructions change behavior based on the context, such as the operating mode of the processor or the state of certain flags.
+For example, some x86 instructions change behavior based on the context, such as the processor's operating mode or the state of certain flags.
 Accurately translating these instructions requires knowledge of the program's state which is quite often not posible during static translation, preventing total translation of the program.
-However, static translation is well-suited for scenarios where the complete binary image is available and the execution environment is stable and predictable.
-The disassemby and translation process of static binary translation is visualized in figure \ref{fig:static_binary_translation}.
+However, static translation is well-suited for scenarios where the complete binary image is available, and the execution environment is stable and predictable.
+The disassembly and translation process of static binary translation is visualized in figure \ref{fig:static_binary_translation}.
 
 \begin{figure}[ht]
     \centering
@@ -44,21 +44,22 @@ The disassemby and translation process of static binary translation is visualize
 \end{figure}
 
 \subsection{Dynamic Binary Translation}
-Dynamic translation is a subset of binary translation.
-It involves translating binary code at runtime as the program executes.
+Dynamic translation is a subset of binary translation, which involves translating binary code at runtime as the program executes.
 Dynamic translation offers the advantage of adaptability, as it can optimize the translation based on the program's actual execution path, which may vary from run to run.
-
 This method is especially useful in emulating complex software where it is impractical to predict all possible execution paths in advance.
-However, it has some drawbacks regarding memory and performance.
+
+However, it has some drawbacks regarding memory and performance, which are partly offset by a cache maintained by the emulator.
 When a dynamic translator is running, extra space is required for the program that is being translated.
-It needs to allocate space for the disassembled program and the translated instructions.
-This space may balloon very quickly at the start.
+It needs space for the original program's binary image, the translated instructions, and a separate stack and heap for the translated program.
+This space may balloon quickly at the start because everything needs to be analyzed and translated since the cache is empty.
 The other drawback is the performance penalty of translating instructions before executing them.
 This drawback is also mostly evident in the starting phase when the cache is empty.
+After the code is mostly translated and cached, the translator will use the cache instead of translating everything again.
 Overall, programs that use dynamic binary translation tend to take up a lot of resources at the start, which decreases after the initial starting phase.
 
 As shown in figure \ref{fig:dynamic_binary_translation}, dynamic binary translators have a mechanism against the performance drawback.
-They often incorporate a cache to store recently translated instructions, reducing the overhead of re-translating those instructions on subsequent executions. 
+They often incorporate a cache to store recently translated instructions, reducing the overhead of re-translating those instructions on subsequent executions.
+This cache usage improves efficiency significantly since code blocks, like loops, tend to repeat the same instructions multiple times. 
 This caching mechanism is a key factor in mitigating the performance penalty associated with runtime translation, making dynamic translation an efficient and versatile approach for system emulation and virtualization environments.
 
 \begin{figure}[ht]
@@ -71,7 +72,7 @@ This caching mechanism is a key factor in mitigating the performance penalty ass
 \section{Basic Blocks}
 In computer science, basic blocks are code sequences with a single entry point and no branches except at the exit.
 In other words, basic blocks are chunks of code that will always run the same way and exit at the same point.
-There is no branching in the middle, and the order of executed instructions are always the same.
+There is no branching in the middle, and the order of executed instructions is always the same.
 This simplicity makes basic blocks easy to analyze.
 Therefore, they are often used in compilers, optimizers, disassemblers, and reverse engineering tools.
 
@@ -96,9 +97,10 @@ As shown in figure \ref{fig:qemu_tcg} the \ac{TCG} is used to translate a guest 
 \end{figure}
 
 \subsubsection{TCG}
-\ac{TCG} \cite{qemu_tcg}, which began as a generic backend for a C compiler, was later improved upon to be both portable and efficient, allowing \ac{QEMU} to quickly translate the guest instructions into a form that can be directly executed by the host machine, thereby improving the speed and efficiency of the emulation process.
-This combination of dynamic binary translation and the flexibility of \ac{TCG} enables \ac{QEMU} to provide a high-performance and versatile solution for system emulation.
-Thanks to the flexibility of the \ac{TCG}, many different architectures are supported by \ac{QEMU}.
+\ac{TCG} \cite{qemu_tcg}, a generic backend for a C compiler, was later improved to be a portable and efficient dynamic binary translator.
+This allows \ac{QEMU} to quickly translate the guest instructions into an intermediate representation, which is better suited for execution by the host machine, thereby improving the speed and efficiency of the emulation process.
+The flexibility of \ac{TCG} enables \ac{QEMU} to provide a high-performance and versatile solution for system emulation.
+Thanks to this flexibility, many different architectures are supported by \ac{QEMU}.
 
 These include \cite{qemu_arch}:
 \begin{itemize}
@@ -112,27 +114,27 @@ These include \cite{qemu_arch}:
 \end{itemize}
 
 \subsection{Arancini}
-Arancini is a project from the Systems Research Group at the \ac{TUM}.
+Arancini is a \ac{HBT} from the Systems Research Group at the \ac{TUM}.
 It builds on the knowledge gained from two earlier projects: Lasagna \cite{rocha2022lasagne}, which translates any x86 program statically to an Arm \ac{ISA}, and Risotto \cite{gouicem2022risotto}, which emulates x86 program dynamically on an Arm machine.
 Like these previous projects, Arancini focuses on making x86 programs work on Arm and adds support for RISC-V systems.
-It achieves this by combining LLVM, a well-known toolkit for building compilers, with its own custom translation technology.
+But it leverages both of the binary translation methods since it is a \ac{HBT}.
+This is achieved by combining LLVM, a well-known toolkit for building compilers, with its custom translation technology.
 
 \subsection{Emulator Logs}
 An emulator log is a detailed record of an emulator's operation.
-It generally captures a wide range of information about the emulator's activities.
+It generally captures a wide range of information about the emulator's activities; however, there is no standard, and the available information changes wildly depending on the emulator itself.
 For our reproducer to function correctly, we must capture specific values after every instruction or basic block.
 These values include register values and all reads and writes in order.
-Generally, emulator logs include more information, including the executed instructions, the translated code, and more.
-However, the aforementioned values are enough to know the exact state of the binary before executing the next step.
+Since emulator logs have no standard format, the verifier must support each log type individually.
+This means each emulator needs its own log parser.
 
 \section{Execution Methods}
 \subsection{Concrete Execution}
 Concrete execution refers to the traditional method of running programs, in which the program operates on actual, specific input values to produce outputs.
 In this execution model, the program's instructions are carried out step by step, with each operation performed using concrete data values provided at runtime or predefined in the program. 
-This straightforward method mirrors how programs are executed in real-world scenarios, making it intuitive and easy to understand. 
+% This straightforward method mirrors how programs are executed in real-world scenarios, making it intuitive and easy to understand. 
 
-Concrete execution is particularly useful for debugging.
-It allows developers to trace the exact sequence of steps a program takes with a given set of inputs, observing the program's behavior and output directly.
+Concrete execution is particularly useful for debugging since it allows developers to trace the exact sequence of steps a program takes with a given set of inputs.
 However, its reliance on specific inputs means that concrete execution can only explore one path through the program at a time, limiting its ability to uncover issues that may arise with different inputs or in untested execution paths.
 
 \subsection{Symbolic Execution}
@@ -149,18 +151,18 @@ Figure \ref{fig:sym_tree} shows that every possible branching instruction adds a
 
 This model can then be analyzed to identify potential bugs, security vulnerabilities, or performance issues across a wide range of input conditions without having to enumerate and test each one individually. 
 While powerful, symbolic execution is computationally intensive and can face challenges like path explosion, where the number of possible execution paths grows exponentially with the program's complexity.
+This flaw prohibits its usage in larger programs where path explosion is very likely to happen.
 
 \subsection{Concolic Execution} 
 Concolic execution, a hybrid approach combining concrete and symbolic execution, aims to mitigate some of the limitations of both methods. 
 In concolic execution, the program is run with specific concrete input values, like in concrete execution, but at the same time, it tracks symbolic constraints derived from the execution path taken. 
 By analyzing these constraints, concolic execution tools can systematically generate new concrete inputs that will explore different paths through the program, thus eliminating state explosion in many cases.
-% , combining the depth of symbolic analysis with the actual values from concrete execution.
 
 This approach allows for more efficient exploration of the program's execution space, making it possible to uncover subtle bugs or vulnerabilities that might not be evident through conventional testing. 
 Concolic execution has proven particularly useful in software testing and verification, providing a balance between the thoroughness of symbolic execution and the directness of concrete execution.
 
 \section{Verifier}
-In this section, we will explore the tools used to build the verifier step by step.
+This section will explore the tools used to build the verifier step by step.
 
 \subsection{Theorem Provers}
 Theorem provers are computer programs that assist in proving mathematical theorems through formal methods.

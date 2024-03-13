@@ -10,7 +10,8 @@ Finally, we will review cases where the verifier might not work as expected.
 
 \section{Additions to the Focaccia}
 Focaccia is a full-fledged verifier that can be used to find bugs in emulators that stem from the wrong implementation of instructions.
-However, because it was designed as a verifier, it lacks some useful features that would help the reproducer.
+However, because it was designed as a verifier, it lacks some useful features that would have helped the reproducer.
+In this chapter, we will go over our additions to amend this.
 
 Firstly, the original verifier would not return the actual state of the program before the execution of an instruction.
 Naturally, this made it quite challenging to know what was inside the memory and registers.
@@ -23,10 +24,10 @@ It can return the following values from a given symbolic expression:
     \item Symbolic expressions of the used and changed memory addresses
     \item A list of used registers
 \end{itemize}
-Both of these results are quite helpful since we can see which registers need to be restored and which memory locations need which values.
+Both of these outputs are helpful since we can see which registers need to be restored and which memory locations need which values.
 If we could change anything without considering the underlying hardware mechanisms like paging, permissions, and the actual location of the program in the memory, this might have been enough.
-However, since this is not possible within the scope of this project, we decided to allocate space in the data section and use it for memory.
-This meant we needed to find the registers specifically used for addressing the memory and change their values to point to the addresses in the data section.
+However, since this is not possible within this project's scope, we decided to allocate space in the data section and use it for memory.
+This meant we needed to find the registers used explicitly for addressing the memory and change their values to point to the addresses in the data section.
 
 We made this by adding a function to the symbolic execution program to evaluate any given expression except a register.
 This meant that given a symbolic expression that points to an address, we could extract the used registers.
@@ -79,23 +80,23 @@ The main functionality of this class is shown in figure \ref{fig:rep_ent}, but w
     If a particular value is unused, its place is filled with zeros.
 \end{itemize}
 
-As we have shown, the ReproducerEntry is a versatile class that can extract everything we need from the snapshot and the symbolic expression.
+As shown, the ReproducerEntry is a versatile class that can extract everything we need from the snapshot and the symbolic expression.
 
 \subsection{x86Reproducer}
 This class is the part that produces the assembly instructions.
 It is specifically designed to produce x86 assembly.
 It receives all the information from the ReproducerEntry and does not directly use the snapshot or the symbolic expression.
 
-In the data section, we initialize the values using the register dictionary and the read/write dictionary.
+In the data section, we initialize the values using the register and read/write dictionaries.
 In the text section, the basic block is combined with stack and register setup code along with start and exit stubs.
 The stack setup only uses what was returned from the stack values, while the register setup uses both the regular register dictionary and the addresses register dictionary.
 
 \section{Shortcomings}
-When trying to understand the reproducer's shortcomings, it is important to remember that it was designed as an add-on to the verifier, which in turn depends on Miasm to work properly.
+When trying to understand the reproducer's shortcomings, it is essential to remember that it was designed as an add-on to the verifier, which in turn depends on Miasm to work correctly.
 As mentioned, our reproducer has some shortcomings regarding special registers and instructions.
-In this section, we will review these cases and explain why they are difficult to deal with.
+This section will review these cases and explain why they are difficult to deal with.
 
-Two very important points should be considered when explaining why it is not possible to replicate bugs perfectly.
+Two crucial points should be considered when explaining why it is not possible to replicate bugs perfectly.
 First of all, computer programs run step by step.
 Each step changes the program's state, writes values to memory, and changes registers.
 However, these are not all of the changes.
@@ -103,10 +104,9 @@ When a program is running, stack frames are built or destroyed, new pages are ad
 
 A program is more than just its address space.
 When trying to understand bugs that stem from emulation, we need to keep in mind that the hardware in the background is also part of the program.
-All of the aforementioned data needs to be changed to perfectly replicate the state.
-However, this is not possible.
-There is no mechanism to replicate all of these except to run the exact program until that point.
-This means the best we can do is approximate the state that causes the bugs.
+All of the aforementioned data must be changed to replicate the state perfectly.
+The simplest method to set the state is to run the program until that exact point is reached.
+
 
 The second point is the symbolic expressions.
 They are good at showing state transitions and building a tree for the execution path.
@@ -117,42 +117,41 @@ Therefore, we use it to guide us in the best way we can.
 
 \subsection{Shortcomings of the Reproducer}
 The reproducer has managed to reproduce bugs and code snippets that generally use simpler instructions to do calculations.
-However, it still has some shortcomings regarding more complicated instructions that affect the program flow or some registers used for controlling the hardware.
+However, there are some shortcomings regarding more complicated instructions that affect the program flow or some registers for controlling the hardware.
+These limitations will be discussed in the following sections.
 
 \subsubsection{Instruction Pointer}
 In CPUs, the instruction pointer is used to select the next instruction which will be executed.
 Normally each instruction increments it by that instruction's size.
 However, some instructions like jump, call, and return change the instruction pointer arbitrarily.
-In these cases, the execution path also changes to a different location.
-
-Most emulators and binary translators work either on an instruction or a basic block basis.
-In both cases, only the last instruction can be one of the aforementioned instructions.
-Since we can ignore that last instruction and still get the same calculation, we have chosen to ignore it.
-This way, we can keep the verifier simpler.
+When this happens, the program expects its execution to continue somewhere else.
+In these cases, the execution path changes to a different location, making testing them difficult.
 
 \subsubsection{Segment Registers}
 These registers were designed to let the original x86 CPU address more than 64 KB of memory.
 However, these are currently used for other purposes like thread-local storage and canary-based stack protection.
-We have left out these registers because changing them will likely cause any program to crash.
+Since changing them is very error-prone and these types of registers do not target the class of bugs we are trying to replicate, we decided to ignore them.
 
 \subsubsection{Return Address}
 When building the stack for the erroneous basic block,  the stack was set by using the values directly from the original snapshot.
 We push these values directly after the start section.
 However, this means that the return address of the function is wrong.
 It is either zero, if it is not used at all, or it is the original return address.
-Both of these values are likely to crash the program if used to return from the start section, but since we directly use the exit syscall, they should not affect the program.
+Both of these values are likely to crash the program if used to return from the start section, but since we directly use the exit system call, the return address has no effect on the program.
 
 \subsubsection{Indirect Memory Access}
 Although our program can find memory access using reads and writes, we only look for them in the registers.
-This makes sense since we need to use at least one register to address a memory location.
+This makes sense since we must use at least one register to address a memory location.
 However, in cases where a memory location has a pointer to a different address, our program cannot recognize them, and it will copy the same value, meaning it would be pointing to an unknown location.
 
-This cannot happen on a single instruction since the address must already be in the register.
-If a basic block is used and this problem arises, the best way to deal with it is to run the reproducer on a single instruction basis.
-This method should prevent programs from indirect memory access in a single basic block. 
+This cannot happen when the reproducer is used for a single instruction since the address must already be in the register.
+If a basic block is used and this problem arises, the best way to deal with it is to run the reproducer on every single instruction.
+This method should prevent bugs arising from indirect memory access in a single basic block. 
 
 \subsection{Segmentation Faults}
-As we have mentioned previously, we cannot replicate \ac{segfault}s even though we have all the necessary information because, without the state that happens after the \ac{segfault}, the verifier cannot notice them.
+As we have mentioned previously, the verifier cannot detect \ac{segfault}s because, without the state that comes after the \ac{segfault}, the verifier will fail.
+Even though the previous state is enough to set the reproducer, it will not be detected therefore it cannot recreate the bugs.
+
 This weakness can be solved by adding a \ac{segfault} error to the verifier that happens when the emulator log is shorter than expected.
 In that case, the reproducer can theoretically produce a program that can trigger the same \ac{segfault}.
 

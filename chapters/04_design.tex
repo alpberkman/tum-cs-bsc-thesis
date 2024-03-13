@@ -17,10 +17,10 @@ The verification process's output is a long list of calculations that occur at e
 The result of these calculations is the following:
 \begin{itemize}
     \item pc: The program counter can be used as a pseudo key that maps the calculations to the instruction or the basic block it belongs to. However, it is not a unique key since the same block can be repeated multiple times.
+    \item snap: The snapshots are the concrete values that have been extracted. These include both register values and memory values.
     \item txl: This is the difference between the current snapshot and the next one. This difference only includes registers.
     \item ref: These are the reference changes that happen during the execution of the instruction or the basic block. They are in the form of symbolic expressions and play a vital role when creating the reproducer program.
     \item errors: This is a list of errors found while comparing the emulator log with the symbolic execution. There are multiple levels of errors depending on their severity.
-    \item snap: The snapshots are the concrete values that have been extracted. These include both register values and memory values.
 \end{itemize}
 
 Of the five entries mentioned, only two are essential for the reproducer, and an additional one is useful but not mandatory.
@@ -31,9 +31,16 @@ The verification process generates five different types of outputs, with errors 
 They are used to filter through the output list to find exactly which steps have problems in them.
 They are not necessarily used in the reproducer, but rather, they are used to pinpoint the places where the reproducer should be used.
 
+\paragraph{snap:}
+The snapshot is one of the three inputs that the reproducer takes.
+They are called snapshots because they represent the exact state of the CPU just before the instruction is executed.
+They include not only the used values but also all of the register values and all of the memory values, which results in a lot of irrelevant information.
+We need a way to filter them in order to extract only the necessary values used in our setup.
+This filtering step can be done by using symbolic expressions. 
+
 \paragraph{txl:}
 The next output, txl, does not directly contribute to the reproducer.
-Since this output only shows the differences between the current and the next snapshot, it does not give any hints about the instructions.
+Since this output only shows the differences between the current and the following snapshot, it does not give any hints about the instructions.
 Neither does it help find values that belong to the previous state of the execution process.
 Therefore these values are not used in the reproducer.
 
@@ -42,14 +49,6 @@ This entry is the program counter, and it is used to check whether the symbolic 
 We can use it this way since it is supposed to have the same value as the RIP register in x86.
 Previously, we used it to find the location of the basic block that was turned into a symbolic expression.
 However, updates to the verifier have made this step redundant since we can now directly convert symbolic expressions back into assembly instructions.
-
-\paragraph{snap:}
-The snapshot is one of the three inputs that the reproducer takes.
-They are called snapshots because they represent the exact state of the CPU just before the instruction is executed.
-However, snapshots contain far too much redundant information.
-Most of these register and memory values are not used when executing our instruction/basic block.
-We need a way to filter them in order to extract only the necessary values used in our setup.
-This filtering step can be done by using symbolic expressions. 
 
 \paragraph{ref:}
 The final output is the ref, a symbolic expression representing the changes our snapshots undergo when we execute the next instruction.
@@ -61,13 +60,13 @@ Instead of trying to guess the actual point, the symbolic expression is used to 
 
 Secondly, the symbolic expression can be filtered to identify which registers are used for which cases.
 These registers can be later matched with the correct values using the snapshots.
-However, there is a special case of registers where this is more complex.
-If the registers are used to address something in the memory, then we cannot simply copy the original value since these addresses would be wrong.
-However, since the symbolic expressions can show exactly which memory values are changed, we can try to match them and handle them accordingly.
+However, there is a special case where this is more complex.
+If the registers are used to address something in the memory, we cannot directly use the same addresses since these addresses would point to memory locations with uninitialized data.
+Instead, we need to allocate data somewhere else and put its address into these registers.
 
 \section{Design of the Reproducer}
 In this section, we will go over the design of the reproducer.
-Since we have already explained the outputs of the verifier and how they relate to the reproducer, we will mainly concentrate on the different parts of the verifier.
+Since we have already explained the verifier's outputs and how they relate to the reproducer, we will mainly concentrate on the different parts of the reproducer.
 The inner workings of the reproducer are depicted in figure \ref{fig:reproducer} in order to provide a clear picture of the data flow.
 The creation process of the data section is shown in figure \ref{fig:data} while figure \ref{fig:text} shows the text section.
 
@@ -86,8 +85,8 @@ The creation process of the data section is shown in figure \ref{fig:data} while
 \end{figure}
 
 \subsection{Instructions and Basic Blocks}
-The verifier was designed to reproduce bugs that come up in bigger programs.
-This meant it needed to find the exact instruction that triggered it and run it without changing anything.
+The verifier is designed to reproduce bugs that come up in bigger programs.
+This process entails finding the exact instruction that triggers a bug and then recreating a similar situation.
 In our case, as depicted in the figure \ref{fig:text} this instruction is supplied by the symbolic expression and directly appended to the text section.
 No adjustment is needed, so we append it without any change.
 
@@ -98,15 +97,15 @@ The same goes for instructions that affect hardware.
 These special cases are handled in the following section.
 
 \subsection{Registers}
-Setting up registers according to their original values is also a very important part of the reproducer.
-Some bugs might only be triggered when the registers are filled with special values.
+Setting up registers according to their original values is also essential for the reproducer.
+Some bugs might only be triggered when the registers are filled with particular values.
 To set the correct environment, we have to handle these values correctly.
-Registers are used for two main purposes.
-Firstly, they are used for general calculation.
-In this case, we do not need to put too much thought into restoring these values.
-However, in the second case, namely for addressing memory, we must be careful about which values we use.
-The original values are most definitely wrong, as they are yet to be allocated.
-Instead, we need to calculate different addresses where we know we can read from and write to.
+Registers are used for two primary purposes.
+
+Firstly, they are set with values that are independent of the state of the emulator and the memory layout.
+For instance, a register storing value 5 for a mathematical calculation fits this description.
+For such registers, we don't need to transform their value; we can directly set them with the same value.
+The second case involves registers that depend numerically on a memory address, requiring additional handling, given that we have not explicitly allocated any memory yet.
 Handling these registers is done in both the data and text sections.
 Figure \ref{fig:data} shows where they are used in the data section, and figure \ref{fig:text} depicts the register setup in the code section.
 
@@ -117,18 +116,18 @@ These categories are:
     \item Address
     \item Other register values
 \end{itemize}
-All of these categories have different calculation methods, with some being rather straightforward and others needing multiple calculations where we leverage symbolic values for resolution.
+All of these categories have different calculation methods, with some being relatively straightforward and others needing multiple calculations where we leverage symbolic values for resolution.
 In the following paragraphs, we will go into more detail about how they are calculated.
 
 \paragraph{Large register values:}
-Large registers are the common names we have given registers that cannot be filled directly with immediate values.
+Large register is the common name we have given to any register that cannot be filled directly with immediate values.
 In these cases, even though we can easily extract the value from the snapshot, we cannot put them into assembly instructions.
 Instead, we have to save the actual value in the memory as a constant and then use a special move instruction with the constant value's address to move it to the register.
 
 We handle these in two steps.
 In the first step, we save these register values to the data section.
 Then, when we write the values into the registers, we use the aforementioned special move instructions with the addresses.
-This way, we can simply set these large registers.
+This way, we can set these large registers.
 
 \paragraph{Addreses:}
 These values are generally inside the 64-bit general-purpose registers.
@@ -142,7 +141,7 @@ In this case, we need to be aware that this address is used in multiple places a
 
 The second case concerns the readable and writeable chunk sizes and how they align.
 We might need to read and write to a continuous memory chunk.
-However, the data from the symbolic expression might point to a random order of reads and writes that don't even align with the size.
+However, the data from the symbolic expression might point to a random order of reads and writes that do not even align with the size.
 In this case, we might order these addresses, but the size of the reads and writes might cause confusion.
 To prevent problems from arising, we split all of these memory locations into bytes.
 This means we always have an address for any byte that is read or written to.
@@ -158,10 +157,10 @@ In figure \ref{fig:addr_match}, we can see a comparison of the naive approach an
 \paragraph{Other register values for calculation:}
 Finally, we have all of the other registers.
 These registers can be set by immediate values.
-This makes setting them up rather easy since we just need to read the values from the snapshot and use the correct move instruction according to their type. 
+This makes setting them up relatively easy since we just need to read the values from the snapshot and use the correct move instruction according to their type. 
 
 \subsection{Memory}
-In the last subsection, we have an overview about using addresses but the actual method of finding these addresses is a bit more complicated.
+In the last subsection, we have an overview about using addresses but the actual method of finding these addresses is more complicated.
 We can gather three subsets of symbolic information from the one we have been given. These are:
 \begin{itemize}
     \item Used memory addresses
@@ -174,30 +173,30 @@ However, these would be just the addresses and not the actual values of the regi
 In x86, an address can be made out of base, index, scale, and displacement.
 Out of these four parts, the first two are registers, and the latter are constants.
 Only the base is necessary, while the other ones can be omitted.
-This means there are multiple ways an address's symbolic expression can look.
+This means there are multiple ways an address's symbolic expression can look, but they all include the base register.
 
-In order to solve this address evaluation, we use a shortcut.
+Although we can write a program that can evaluate every possible base, index, scale, and displacement combination, there is a better way.
 We can separate the offset from the base by evaluating the base register and the whole address.
 When we prepare the new address, we can subtract this offset from the displacement.
-This will allow us to allocate space in the data section and ignore the offset when running the code.
+This will allow us to ignore the original offset when running the code since we have already subtracted the offset, which will later be added.
 This calculation is depicted in figure \ref{fig:mem_addr}.
-Using this method, we can keep the original values for everything except the base and don't need to consider how the addressing is made.
+Using this method, we can keep the original values for everything except the base and do not need to consider how the addressing is made.
 
 \begin{figure}[ht]
     \centering
     \includegraphics[width=0.9\linewidth]{figures/mem_addr}
-    \caption{Calculating the offset to match the allocated address.}
+    \caption{Calculating the new effective address using the offset and the allocated address.}
     \label{fig:mem_addr}
 \end{figure}
 
 \subsection{Stack}
 Setting the stack state is the final step in configuring the reproducer.
-This step isn't required for every instruction but is essential for operations that involve the stack, such as push, pop, or any memory addressing that relies on the stack pointer.
+This step is not required for every instruction but is essential for operations that involve the stack, such as push, pop, or any memory addressing that relies on the stack pointer.
 The method for finding the values in the stack is the same as the memory values; we evaluate expressions related to memory reads or writes.
 However, we pay special attention to whether these symbolic expressions involve the stack pointer.
 
 Although the approach for identifying stack values mirrors that used for general memory operations, initializing these stack values demands a different method.
-Unlike other memory operations where the exact location is flexible as long as there's enough space and the registers have the correct addresses, the values in the stack need to be in the correct positions.
+Unlike other memory operations where the exact location is flexible as long as there is enough space and the registers have the correct addresses, the values in the stack need to be in the correct positions.
 Therefore, the values related to the original stack must maintain their relative positions relative to the stack pointer.
 
 We first need to gather the correct values to reconstruct the stack.
@@ -205,7 +204,7 @@ Generally, not all of the values on the stack are used for the instructions give
 Therefore, we cannot recognize them.
 In that case, we substitute these values with zeros.
 When collecting these values and adding the padding, it is essential to remember that the values are not only before (in higher addresses) the stack pointer but also after (in lower addresses) it.
-This means we need to put all the values into the stack and then ensure the stack pointer is in the correct place.
+This means we need to put all the values into the stack and then ensure that the stack pointer is in the correct place.
 We do this by pushing all the values to the stack and subtracting the number of bytes whose addresses are smaller than the original stack pointer from the new stack pointer.
 By using this method, we recreated the stack.
 
